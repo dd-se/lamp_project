@@ -1,0 +1,5 @@
+[servers]
+192.168.122.5
+
+[linux:children]
+servers

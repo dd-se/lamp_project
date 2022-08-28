@@ -1,0 +1,110 @@
+- name: deploy app
+  hosts: servers
+  gather_facts: no
+  become: true
+  vars:
+    app:
+      src: ./app/
+      dest: /opt/fastapi/
+      owner: www-data
+      description: simple fastapi app using a mysql database
+      port: "8000"
+    endpoint: 'http://127.0.0.1/'
+  tasks:
+    - name: install stack dependencies
+      ansible.builtin.apt:
+        name:
+          - python3
+          - python3-pip
+          - docker-compose
+          - docker.io
+          - apache2
+        state: present
+        update_cache: yes
+    - name: deploy app files
+      ansible.posix.synchronize:
+        dest: "{{ app.dest }}"
+        src: "{{ app.src }}"
+      notify: restart app
+    - name: render and copy docker-compose file to app destination
+      ansible.builtin.template:
+        src: docker-compose.j2
+        dest: "{{ app.dest }}docker-compose.yml"
+        owner: root
+        group: root
+        mode: 0600
+    - name: render and copy app enviroment variables to app destination
+      ansible.builtin.template:
+        src: app_env.j2
+        dest: "{{ app.dest }}.env"
+        owner: root
+        group: root
+        mode: 0600
+    - name: install mysql database
+      community.docker.docker_compose:
+        project_src: "{{ app.dest }}"
+        files: docker-compose.yml
+        build: yes
+        state: present
+    - name: install virtualenv
+      ansible.builtin.pip:
+        name: virtualenv
+    - name: Install specified python requirements in indicated (virtualenv)
+      ansible.builtin.pip:
+        requirements: "{{ app.dest }}requirements.txt"
+        virtualenv: "{{ app.dest }}.venv"
+    - name: take ownership of files
+      ansible.builtin.file:
+        dest: "{{ app.dest }}" 
+        owner: "{{ app.owner }}"
+        group: "{{ app.owner }}"
+        mode: 0744
+        recurse: yes
+    - name: render and copy systemd service file for app
+      ansible.builtin.template:
+        src: systemd_gunicorn.j2
+        dest: /etc/systemd/system/gunicorn.service
+        owner: root
+        group: root
+        mode: 0644
+      notify: refresh systemd daemon
+    - name: render and copy vhost config file for apache webserver
+      ansible.builtin.template:
+        src: apache_vhost.j2
+        dest: /etc/apache2/sites-enabled/000-default.conf
+        owner: root
+        group: root
+        mode: 0644
+    - name: enable plugins for apache webserver
+      ansible.builtin.command:
+        cmd: | 
+          a2enmod proxy proxy_ajp proxy_http rewrite deflate
+          headers proxy_balancer proxy_connect proxy_html
+      notify: restart apache2
+    - name: make sure required services are running
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - docker
+        - gunicorn
+    - name: check if app is up and responding to GET requests
+      ansible.builtin.uri:
+        url: "{{ endpoint }}"
+        follow_redirects: all
+        method: GET
+      register: response
+      until: response.status == 200
+  handlers:
+    - name: refresh systemd daemon
+      ansible.builtin.command: systemctl daemon-reload
+    - name: restart apache2
+      ansible.builtin.service:
+        name: apache2
+        state: restarted
+    - name: restart app
+      ansible.builtin.service:
+        name: gunicorn
+        state: restarted
+

@@ -1,0 +1,10 @@
+<VirtualHost *:80>
+	ServerAdmin groupchorba@nackademin.se
+
+	ErrorLog ${APACHE_LOG_DIR}/gunicorn-error.log
+        CustomLog ${APACHE_LOG_DIR}/gunicorn-access.log combined
+	<Location "/">
+		ProxyPass "http://127.0.0.1:{{app.port}}/"
+          	ProxyPassReverse "http://127.0.0.1:{{app.port}}/"
+	</Location>
+</VirtualHost>
