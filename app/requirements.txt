@@ -1,0 +1,15 @@
+# app deps
+fastapi
+gunicorn
+uvicorn[standard]
+sqlalchemy
+PyMySQL
+cryptography
+jinja2
+python-dotenv
+
+# testing and formatting
+pytest
+pytest-cov
+requests
+black

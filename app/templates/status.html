@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+  <table class="table border table-striped my-2 shadow-sm mt-3">
+    <thead class="table border-2">
+      <tr>
+        <th scope="col">APACHE</th>
+        <th scope="col">FASTAPI</th>
+        <th scope="col">DATABASE</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="text-success">OK</td>
+        <td>v{{ fa }}</td>
+        <td class="text-success">OK</td>
+      </tr>
+    </tbody>
+  </table>
+{% endblock content %}
