@@ -9,8 +9,43 @@ fi
 cd app && .virtualenv/bin/pytest
 if [ $? -ne 0 ]; then
     echo "Tests failed, exiting!"
-else
-    echo "Tests passed, deploying..."
-    cd ..
-    ansible-playbook -e @secrets.yml --ask-vault-pass playbook.yml
+    exit
 fi
+echo "Tests passed, deploying..."
+cd ../provisioner || exit
+terraform apply --auto-approve || exit
+echo "Provisioning done, creating ansible inventory."
+ips=$(terraform output -json public_ip | jq -r .[])
+cd .. || exit
+cat <<EOF >hosts
+[frontend]
+
+[backend]
+
+[db]
+
+[stack:children]
+frontend
+backend
+db
+EOF
+count=0
+for ip in $ips; do
+    echo "Added IP ${ip}"
+    case $count in
+    0)
+        sed -i "/\[frontend\]/a ${ip}" hosts
+        ;;
+    1 | 2)
+        sed -i "/\[backend\]/a ${ip}" hosts
+        ;;
+    3)
+        sed -i "/\[db\]/a ${ip}" hosts
+        ;;
+    *)
+        echo "Shouldn't be here..."
+        ;;
+    esac
+    count=$((count + 1))
+done
+ansible-playbook -e @secrets.yml --ask-vault-pass playbook.yml
