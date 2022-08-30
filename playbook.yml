@@ -1,164 +1,132 @@
-- name: deploy app
-  hosts: servers
-  gather_facts: no
+
+- name: setup stack
+  hosts: stack
+  gather_facts: true
   become: true
   vars:
     app:
       src: ./app/
-      dest: /opt/fastapi01/
-      dest2: /opt/fastapi02/
-      owner: www-data
+      dest: /opt/fastapi/
+      owner: fastapi_user
       description: simple fastapi app using a mysql database
-      app_01_port: "8000"
-      app_02_port: "8001"
-    endpoint: 'http://127.0.0.1/'
+      app_port: "8000"
   tasks:
-    - name: install stack dependencies
-      ansible.builtin.apt:
-        name:
-          - python3
-          - python3-pip
-          - docker-compose
-          - docker.io
-          - apache2
-        state: present
-        update_cache: yes
-    - name: deploy app01 files
-      ansible.posix.synchronize:
-        dest: "{{ app.dest }}"
-        src: "{{ app.src }}"
-      notify: restart app
-    - name: deploy app02 files
-      ansible.posix.synchronize:
-        dest: "{{ app.dest2 }}"
-        src: "{{ app.src }}"
-      notify: restart app02
-    - name: render and copy docker-compose file to app destination
-      ansible.builtin.template:
-        src: docker-compose.j2
-        dest: "{{ app.dest }}docker-compose.yml"
-        owner: root
-        group: root
-        mode: 0600
-    - name: render and copy app enviroment variables to app01 and app02 destination
-      ansible.builtin.template:
-        src: app_env.j2
-        dest: "{{ item }}.env"
-        owner: root
-        group: root
-        mode: 0600
-      loop:
-        - "{{ app.dest }}"
-        - "{{ app.dest2 }}"
-    - name: install mysql database
-      community.docker.docker_compose:
-        project_src: "{{ app.dest }}"
-        files: docker-compose.yml
-        build: yes
-        state: present
-    - name: install virtualenv
-      ansible.builtin.pip:
-        name: virtualenv
-    - name: Install specified python requirements in indicated (virtualenv)
-      ansible.builtin.pip:
-        requirements: "{{ item }}requirements.txt"
-        virtualenv: "{{ item }}.venv"
-      loop:
-        - "{{ app.dest }}"
-        - "{{ app.dest2 }}"
-    - name: render and copy gunicorn config for app01
-      ansible.builtin.template:
-        src: gunicorn_config.j2
-        dest: "{{ app.dest }}gunicorn_config.py"
-        owner: root
-        group: root
-        mode: 0644
-      vars:
-        port: "{{ app.app_01_port }}"
-    - name: render and copy gunicorn config for app02
-      ansible.builtin.template:
-        src: gunicorn_config.j2
-        dest: "{{ app.dest2 }}gunicorn_config.py"
-        owner: root
-        group: root
-        mode: 0644
-      vars:
-        port: "{{ app.app_02_port }}"    
-    - name: modify app02 base.html file
-      ansible.builtin.replace:
-        path: "{{ app.dest2 }}templates/base.html"
+      - name: '[FRONTEND] install configure apache2'
+        block:
+          - name: install apache2
+            ansible.builtin.apt:
+              name: apache2
+              state: present
+              update_cache: yes
+          - name: render and copy vhost config file for apache webserver
+            ansible.builtin.template:
+              src: apache_vhost.j2
+              dest: /etc/apache2/sites-enabled/000-default.conf
+              owner: root
+              group: root
+              mode: 0644
+          - name: enable plugins for apache webserver
+            ansible.builtin.command:
+              cmd: | 
+                a2enmod proxy proxy_ajp proxy_http rewrite deflate
+                headers proxy_balancer proxy_connect proxy_html lbmethod_byrequests
+          - name: restart service
+            ansible.builtin.service:
+              name: apache2
+              state: restarted
+        when: "'frontend' in group_names"
+
+      - name: '[DB] Install configure mysql database'
+        block:
+          - name: 'install docker and docker-compose'
+            ansible.builtin.apt:
+              name:
+                - docker.io
+                - docker-compose
+              state: present
+              update_cache: yes
+          - name: 'render and copy docker-compose file to root destination'
+            ansible.builtin.template:
+              src: docker-compose.j2
+              dest: "/tmp/docker-compose.yml"
+          - name: 'copy db init files'
+            ansible.builtin.copy:
+              src: "{{ app.src }}db" 
+              dest: "/tmp/"
+          - name: 'install mysql database'
+            community.docker.docker_compose:
+              project_src: /tmp/
+              files: docker-compose.yml
+              build: yes
+              state: present
+          - name: clean up
+            ansible.builtin.file:
+              path: /tmp/docker-compose.yml
+              state: absent
+          - ansible.builtin.file:
+              path: /tmp/db/init.sql
+              state: absent
+        when: "'db' in group_names"
+
+      - name: '[BACKEND] Install configure backends'
+        block:
+        - name: 'create user'
+          ansible.builtin.user:
+            name: "{{ app.owner }}"
+            comment: "app user"
+            state: present
+        - name: 'install python3 and pip'
+          ansible.builtin.apt:
+            name:
+              - python3
+              - python3-pip
+            state: present
+            update_cache: yes
+        - name: 'copy app files to backends'
+          ansible.posix.synchronize:
+            dest: "{{ app.dest }}"
+            src: "{{ app.src }}"
+        - name: 'render and copy app enviroment variables to backend destinations'
+          ansible.builtin.template:
+            src: app_env.j2
+            dest: "{{ app.dest }}.env"
+        - name: 'install virtualenv'
+          ansible.builtin.pip:
+            name: virtualenv
+            state: present
+        - name: 'install specified python requirements in indicated (virtualenv)'
+          ansible.builtin.pip:
+            requirements: "{{ app.dest }}requirements.txt"
+            virtualenv: "{{ app.dest }}.venv"
+        - name: 'take ownership of backend files'
+          ansible.builtin.file:
+            dest: "{{ app.dest }}" 
+            owner: "{{ app.owner }}"
+            group: "{{ app.owner }}"
+            mode: 0744
+            recurse: yes
+        - name: 'render and copy systemd service file for app02'
+          ansible.builtin.template:
+            src: systemd_gunicorn_app.j2
+            dest: /etc/systemd/system/gunicorn.service
+            owner: root
+            group: root
+            mode: 0644
+        - name: ensure service is running
+          ansible.builtin.service:
+            name: gunicorn
+            state: restarted
+            enabled: yes
+        when: "'backend' in group_names"
+- name: modify base.html of first backend server
+  hosts: backend[0]
+  become: true
+  gather_facts: no
+  vars:
+    app:
+      dest: /opt/fastapi/
+  tasks:
+    - ansible.builtin.replace:
+        path: "{{ app.dest }}templates/base.html"
         regexp: 'bg-dark'
         replace: 'bg-secondary'
-    - name: take ownership of app01 and app02 files
-      ansible.builtin.file:
-        dest: "{{ item }}" 
-        owner: "{{ app.owner }}"
-        group: "{{ app.owner }}"
-        mode: 0744
-        recurse: yes
-      loop:
-        - "{{ app.dest }}"
-        - "{{ app.dest2 }}"
-    - name: render and copy systemd service file for app01
-      ansible.builtin.template:
-        src: systemd_gunicorn_app01.j2
-        dest: /etc/systemd/system/gunicorn01.service
-        owner: root
-        group: root
-        mode: 0644
-    - name: render and copy systemd service file for app02
-      ansible.builtin.template:
-        src: systemd_gunicorn_app02.j2
-        dest: /etc/systemd/system/gunicorn02.service
-        owner: root
-        group: root
-        mode: 0644
-      notify: refresh systemd daemon
-    - name: render and copy vhost config file for apache webserver
-      ansible.builtin.template:
-        src: apache_vhost.j2
-        dest: /etc/apache2/sites-enabled/000-default.conf
-        owner: root
-        group: root
-        mode: 0644
-      vars:
-        app01_port: "{{ app.app_01_port }}"
-        app02_port: "{{ app.app_02_port }}"
-    - name: enable plugins for apache webserver
-      ansible.builtin.command:
-        cmd: | 
-          a2enmod proxy proxy_ajp proxy_http rewrite deflate
-          headers proxy_balancer proxy_connect proxy_html lbmethod_byrequests
-      notify: restart apache2
-    - name: make sure required services are running
-      ansible.builtin.service:
-        name: "{{ item }}"
-        state: started
-        enabled: yes
-      loop:
-        - docker
-        - gunicorn01
-        - gunicorn02
-    - name: check if app is up and responding to GET requests
-      ansible.builtin.uri:
-        url: "{{ endpoint }}"
-        follow_redirects: all
-        method: GET
-      register: response
-      until: response.status == 200
-  handlers:
-    - name: refresh systemd daemon
-      ansible.builtin.command: systemctl daemon-reload
-    - name: restart apache2
-      ansible.builtin.service:
-        name: apache2
-        state: restarted
-    - name: restart app
-      ansible.builtin.service:
-        name: gunicorn01
-        state: restarted
-    - name: restart app02
-      ansible.builtin.service:
-        name: gunicorn02
-        state: restarted
-

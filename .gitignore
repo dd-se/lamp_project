@@ -1,6 +1,9 @@
 # my files
-kvm_key
-kvm_key.pub
+provisioner/ssh_key/dd_key
+provisioner/ssh_key/dd_key.pub
+provisioner/.terraform
+provisioner/terraform.tfstate
+provisioner/terraform.tfstate.backup
 coverage.json
 .virtualenv
 

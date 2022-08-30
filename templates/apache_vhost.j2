@@ -1,11 +1,11 @@
 <VirtualHost *:80>
 	ServerAdmin groupchorba@nackademin.se
-
 	ErrorLog ${APACHE_LOG_DIR}/gunicorn-error.log
     CustomLog ${APACHE_LOG_DIR}/gunicorn-access.log combined
 	<Proxy balancer://mycluster>
-       BalancerMember http://127.0.0.1:{{ app01_port }}
-       BalancerMember http://127.0.0.1:{{ app02_port }}
+    {% for host in groups['backend'] %}
+       BalancerMember http://{{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }}:{{ app.app_port }}
+    {% endfor %}
       </Proxy>
       ProxyPreserveHost On
       ProxyPass / balancer://mycluster/
