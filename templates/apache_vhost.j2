@@ -2,9 +2,12 @@
 	ServerAdmin groupchorba@nackademin.se
 
 	ErrorLog ${APACHE_LOG_DIR}/gunicorn-error.log
-        CustomLog ${APACHE_LOG_DIR}/gunicorn-access.log combined
-	<Location "/">
-		ProxyPass "http://127.0.0.1:{{app.port}}/"
-          	ProxyPassReverse "http://127.0.0.1:{{app.port}}/"
-	</Location>
+    CustomLog ${APACHE_LOG_DIR}/gunicorn-access.log combined
+	<Proxy balancer://mycluster>
+       BalancerMember http://127.0.0.1:{{ app01_port }}
+       BalancerMember http://127.0.0.1:{{ app02_port }}
+      </Proxy>
+      ProxyPreserveHost On
+      ProxyPass / balancer://mycluster/
+      ProxyPassReverse / balancer://mycluster/
 </VirtualHost>

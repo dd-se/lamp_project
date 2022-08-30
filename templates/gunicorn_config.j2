@@ -1,0 +1,9 @@
+from multiprocessing import cpu_count
+
+workers = cpu_count() + 1
+bind = "127.0.0.1:{{ port }}"
+worker_class = "uvicorn.workers.UvicornWorker"
+reload = True
+
+accesslog = "-"
+errorlog = "-"
