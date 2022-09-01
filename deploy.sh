@@ -36,14 +36,11 @@ for ip in $ips; do
     0)
         sed -i "/\[frontend\]/a ${ip}" hosts
         ;;
-    1 | 2)
-        sed -i "/\[backend\]/a ${ip}" hosts
-        ;;
-    3)
+    1)
         sed -i "/\[db\]/a ${ip}" hosts
         ;;
     *)
-        echo "Shouldn't be here..."
+        sed -i "/\[backend\]/a ${ip}" hosts
         ;;
     esac
     count=$((count + 1))

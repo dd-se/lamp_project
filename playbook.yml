@@ -32,6 +32,17 @@
               cmd: | 
                 a2enmod proxy proxy_ajp proxy_http rewrite deflate
                 headers proxy_balancer proxy_connect proxy_html lbmethod_byrequests
+          - ansible.builtin.command:
+              cmd: curl https://icanhazip.com/
+            register: ip_number
+            delegate_to: localhost
+            connection: local
+            become: no
+          - name: enable server status page
+            ansible.builtin.replace:
+              path: /etc/apache2/mods-enabled/status.conf
+              regexp: '#Require ip 192.0.2.0/24'
+              replace: 'Require ip {{ ip_number.stdout }}/24'
           - name: restart service
             ansible.builtin.service:
               name: apache2
