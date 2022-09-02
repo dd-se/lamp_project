@@ -146,14 +146,10 @@
             name: gunicorn
             state: restarted
             enabled: yes
+        - name: modify base.html
+          ansible.builtin.replace:
+            path: "/opt/fastapi/templates/base.html"
+            regexp: 'NODE'
+            replace: "NODE-{{ ansible_hostname | upper }}"
+          tags: base
         when: "'backend' in group_names"
-
-- name: modify base.html of one backend server
-  hosts: backend[0]
-  become: true
-  gather_facts: no
-  tasks:
-    - ansible.builtin.replace:
-        path: "/opt/fastapi/templates/base.html"
-        regexp: 'bg-dark'
-        replace: 'bg-secondary'
