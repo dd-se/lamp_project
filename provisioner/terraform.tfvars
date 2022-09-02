@@ -7,4 +7,4 @@ ingress_ports = {
   "Allow APP"  = { protocol = "tcp", port = 8000 },
 }
 ssh_public_key = "./ssh_key/dd_key.pub"
-host_count     = 4
+host_count     = 8

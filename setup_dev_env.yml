@@ -1,0 +1,25 @@
+- name: setup mysql for development
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  become: yes
+  vars:
+    dev:
+      username: dbuser
+      password: s3cr3t
+  tasks:
+    - name: render .env file for app
+      ansible.builtin.template:
+        src: app_env_dev.j2
+        dest: ./app/.env
+        mode: 0666
+    - name: render mysql docker-compose for app
+      ansible.builtin.template:
+        src: docker-compose.j2
+        dest: /tmp/docker-compose.yml
+    - name: install mysql
+      community.docker.docker_compose:
+        project_src: .
+        files: /tmp/docker-compose.yml
+        state: present
+        build: yes

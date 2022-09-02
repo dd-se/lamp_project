@@ -7,10 +7,10 @@ services:
       - SYS_NICE
     restart: always
     environment:
-      - MYSQL_ROOT_PASSWORD={{secrets.password}}
-      - MYSQL_DATABASE={{secrets.db}}
-      - MYSQL_USER={{secrets.username}}
-      - MYSQL_PASSWORD={{secrets.password}}
+      - MYSQL_ROOT_PASSWORD={{dev.password}}
+      - MYSQL_DATABASE=mytestdb
+      - MYSQL_USER={{dev.username}}
+      - MYSQL_PASSWORD={{dev.password}}
     expose:
       - '3306'
     ports:
