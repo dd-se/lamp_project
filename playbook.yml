@@ -148,7 +148,7 @@
             enabled: yes
         - name: modify base.html
           ansible.builtin.replace:
-            path: "/opt/fastapi/templates/base.html"
+            path: "{{ app.dest }}templates/base.html"
             regexp: 'NODE'
             replace: "NODE-{{ ansible_hostname | upper }}"
           tags: base
