@@ -1,0 +1,53 @@
+- name: 'create user'
+  ansible.builtin.user:
+    name: "{{ app.owner }}"
+    comment: "app user"
+    state: present
+- name: 'install python3 and pip'
+  ansible.builtin.apt:
+    name:
+      - python3
+      - python3-pip
+    state: present
+    update_cache: yes
+- name: 'copy app files to backends'
+  ansible.posix.synchronize:
+    dest: "{{ app.dest }}"
+    src: "{{ app.src }}"
+- name: 'render and copy app enviroment variables to backend destinations'
+  ansible.builtin.template:
+    src: app_env.j2
+    dest: "{{ app.dest }}.env"
+- name: 'install virtualenv'
+  ansible.builtin.pip:
+    name: virtualenv
+    state: present
+- name: 'install specified python requirements in indicated (virtualenv)'
+  ansible.builtin.pip:
+    requirements: "{{ app.dest }}requirements.txt"
+    virtualenv: "{{ app.dest }}.venv"
+- name: 'take ownership of backend files'
+  ansible.builtin.file:
+    dest: "{{ app.dest }}" 
+    owner: "{{ app.owner }}"
+    group: "{{ app.owner }}"
+    mode: 0744
+    recurse: yes
+- name: 'render and copy systemd service file for backends'
+  ansible.builtin.template:
+    src: systemd_gunicorn_app.j2
+    dest: /etc/systemd/system/gunicorn.service
+    owner: root
+    group: root
+    mode: 0644
+- name: ensure service is running
+  ansible.builtin.service:
+    name: gunicorn
+    state: restarted
+    enabled: yes
+- name: modify base.html
+  ansible.builtin.replace:
+    path: "{{ app.dest }}templates/base.html"
+    regexp: 'NODE'
+    replace: "{{ ansible_hostname | upper }}"
+  tags: base

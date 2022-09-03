@@ -3,3 +3,6 @@ MYSQL_PASSWORD={{secrets.password}}
 {% for host in groups['db'] %}
 MYSQL_SERVER={{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }}
 {% endfor %}
+EMAIL={{gcmail.email}}
+EMAIL_PASSWORD={{gcmail.api_key}}
+

@@ -15,6 +15,8 @@ class Secrets:
     DATABASE_URL = (
         f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_SERVER}/{MYSQL_DB}"
     )
+    EMAIL: str = os.getenv("EMAIL", "placeholder@gmail.com")
+    EMAIL_PASSWORD: str = os.getenv("EMAIL_PASSWORD", "placeholder password")
 
 
 secrets = Secrets()
