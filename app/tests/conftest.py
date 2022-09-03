@@ -10,9 +10,10 @@ from sqlalchemy.orm import Session, sessionmaker
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database import Base, User, get_db
-from main import app as _app
+from api import router
 
-
+_app = FastAPI()
+_app.include_router(router)
 engine = create_engine(url="sqlite://", connect_args={"check_same_thread": False})
 sync_session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

@@ -1,0 +1,44 @@
+- name: 'install mysql'
+  ansible.builtin.apt:
+    name: 
+      - mysql-server=8.0.30-0ubuntu0.22.04.1
+      - python3-pymysql
+    state: present
+    update_cache: yes
+- name: 'ensure mysql is started'
+  ansible.builtin.service:
+    name: mysql
+    state: started
+    enabled: yes
+- name: create user
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    host: '%'
+    name: "{{ secrets.username }}"
+    password: "{{ secrets.password }}"
+    priv: '{{ secrets.db }}.*:ALL,GRANT'
+    state: present
+- name: create database
+  community.mysql.mysql_db:
+    name: "{{ secrets.db }}"
+    state: present
+    login_user: "{{ secrets.username }}"
+    login_password: "{{ secrets.password }}"
+- name: Run several queries against the db
+  community.mysql.mysql_query:
+    login_user: "{{ secrets.username }}"
+    login_password: "{{ secrets.password }}"
+    login_db: "{{ secrets.db }}"
+    query: "{{ secret_query }}"
+    single_transaction: yes
+  ignore_errors: yes
+  no_log: true
+- name: 'Bind mysql to {{ mysql.bind_address }}'
+  ansible.builtin.lineinfile:
+    path: /etc/mysql/mysql.conf.d/mysqld.cnf
+    regexp: '^bind-address'
+    line: 'bind-address = {{ mysql.bind_address }}'
+- name: restart mysql
+  ansible.builtin.service:
+    name: mysql
+    state: restarted
