@@ -13,15 +13,15 @@
     mysql:
       bind_address: '0.0.0.0'
   tasks:
-      - name: '[FRONTEND] install configure apache2'
+      - name: '[LOADBALANCER] install configure apache2'
         ansible.builtin.include_tasks:
           file: ./tasks/apache.yml
-        when: "'frontend' in group_names"
+        when: "'loadbalancer' in group_names"
 
       - name: '[DB] Install configure mysql database'
         ansible.builtin.include_tasks:
           file: ./tasks/mysql.yml
-        when: "'db' in group_names"
+        when: "'database' in group_names"
 
       - name: '[BACKEND] Install configure backends'
         ansible.builtin.include_tasks:

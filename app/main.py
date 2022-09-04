@@ -1,16 +1,14 @@
-from smtplib import SMTP
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-
-from fastapi import FastAPI, Request
-from fastapi import responses
-from fastapi.staticfiles import StaticFiles
+from smtplib import SMTP
 from typing import Any, Union
 
+from fastapi import FastAPI, Request, responses
+from fastapi.staticfiles import StaticFiles
+
+from api import router
 from database import Base, engine
 from settings import secrets
-from api import router
-
 
 app = FastAPI(
     title="Gruppuppgift-Linux 2",
@@ -43,7 +41,7 @@ async def startup():
 async def internal_server_error_handler(
     request: Request, exception: Union[Exception, Any]
 ):
-    if secrets.MYSQL_USER != "dbuser":
+    if secrets.PRODUCTION:
         send_email(
             500,
             mail_content=f"Intervention required.\nException:\n{exception.__dict__}",

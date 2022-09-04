@@ -7,7 +7,7 @@ resource "aws_vpc" "server_vpc" {
   }
 }
 
-# create a subnet and create relation with my vpc
+# create a subnet and create relation with the vpc
 resource "aws_subnet" "server_subnet" {
   vpc_id                  = aws_vpc.server_vpc.id
   cidr_block              = "10.123.1.0/24"
@@ -37,7 +37,7 @@ resource "aws_route_table" "server_route" {
   }
 }
 
-# create a default route if destionation not in subnet send it through the gateway
+# create a default route, if destionation not in subnet send it through the gateway
 resource "aws_route" "default_route" {
   route_table_id         = aws_route_table.server_route.id        # apply this to my table
   destination_cidr_block = "0.0.0.0/0"                            # 0.0.0.0 0.0.0.0 via gateway
