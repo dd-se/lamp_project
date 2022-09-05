@@ -16,7 +16,8 @@ class Secrets:
         f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_SERVER}/{MYSQL_DB}"
     )
     EMAIL: str = os.getenv("EMAIL", "placeholder@gmail.com")
-    EMAIL_PASSWORD: str = os.getenv("EMAIL_PASSWORD", "placeholder password")
+    EMAIL_PASSWORD: str = os.getenv("EMAIL_PASSWORD", "placeholder_password")
+    PRODUCTION: bool = True if os.getenv("PRODUCTION", "").lower() == "true" else False
 
 
 secrets = Secrets()

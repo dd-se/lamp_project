@@ -25,7 +25,7 @@
   ansible.builtin.replace:
     path: /etc/apache2/mods-enabled/status.conf
     regexp: '#Require ip 192.0.2.0/24'
-    replace: 'Require ip {{ ip_number.stdout }}/24'
+    replace: 'Require ip {{ ip_number.stdout }}/32'
 - name: restart service
   ansible.builtin.service:
     name: apache2

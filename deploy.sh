@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+export TF_IN_AUTOMATION=YES
 if [ ! -d "app/.virtualenv" ]; then
     echo "You have not set up a virtual enviroment for testing the application"
     echo "Step 1: CD into app folder and run 'python3 -m venv .virtualenv'"
@@ -15,34 +16,28 @@ echo "Tests passed, deploying..."
 cd ../provisioner || exit
 terraform apply --auto-approve || exit
 echo "Provisioning done, creating ansible inventory."
-ips=$(terraform output -json public_ip | jq -r .[])
+LB=$(terraform output -raw loadbalancer)
+DB=$(terraform output -raw database)
+BACKENDS=$(terraform output -json backends | jq -r .[])
 cd .. || exit
 cat <<EOF >hosts
-[frontend]
+[loadbalancer]
 
 [backend]
 
-[db]
+[database]
 
 [stack:children]
-frontend
+loadbalancer
 backend
-db
+database
 EOF
-count=0
-for ip in $ips; do
-    echo "Added IP ${ip}"
-    case $count in
-    0)
-        sed -i "/\[frontend\]/a ${ip}" hosts
-        ;;
-    1)
-        sed -i "/\[db\]/a ${ip}" hosts
-        ;;
-    *)
-        sed -i "/\[backend\]/a ${ip}" hosts
-        ;;
-    esac
-    count=$((count + 1))
+echo "Added loadbalancer ${LB}"
+sed -i "/\[loadbalancer\]/a ${LB}" hosts
+echo "Added database ${DB}"
+sed -i "/\[database\]/a ${LB}" hosts
+for backend in $BACKENDS; do
+    echo "Added backend ${backend}"
+    sed -i "/\[backend\]/a ${backend}" hosts
 done
 ansible-playbook -e @secrets.yml --ask-vault-pass playbook.yml

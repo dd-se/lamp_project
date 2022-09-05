@@ -1,8 +1,9 @@
-output "public_ip" {
-  value = aws_instance.server_node[*].public_ip
+output "loadbalancer" {
+  value = aws_instance.load_balancer.public_ip
 }
-
-output "private_ip" {
-  value = aws_instance.server_node[*].private_ip
+output "database" {
+  value = aws_instance.database.public_ip
 }
-
+output "backends" {
+  value = aws_instance.backends[*].public_ip
+}

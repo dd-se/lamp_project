@@ -1,18 +1,14 @@
-[frontend]
-13.48.190.238
+[loadbalancer]
+16.171.60.246
 
 [backend]
-13.53.122.173
-13.49.224.161
-13.49.224.223
-13.53.150.244
-13.53.122.55
-16.16.24.72
+13.53.72.246
+13.51.48.254
 
-[db]
-13.48.1.58
+[database]
+16.171.60.246
 
 [stack:children]
-frontend
+loadbalancer
 backend
-db
+database
