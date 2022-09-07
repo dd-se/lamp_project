@@ -1,14 +1,23 @@
 [loadbalancer]
-16.171.60.246
+13.53.207.21
 
 [backend]
-13.53.72.246
-13.51.48.254
+13.53.74.133
+16.16.58.184
 
 [database]
-16.171.60.246
+13.49.74.242
+
+[doctor]
+13.51.238.88
+
+[patients:children]
+loadbalancer
+backend
+database
 
 [stack:children]
 loadbalancer
 backend
 database
+doctor

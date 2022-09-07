@@ -1,0 +1,18 @@
+- name: create doctor user
+  ansible.builtin.user:
+    name: doctor
+    state: present
+    comment: "heartbeat services user"
+- name: distribute public key
+  ansible.posix.authorized_key:
+    user: doctor
+    state: present
+    key: "{{ lookup('file', '/tmp/pub_key/heartbeat_key.pub') }}"
+- name: allow doctor to restart some services
+  community.general.system.sudoers:
+    name: critical_services
+    user: doctor
+    commands: 
+      - /bin/systemctl restart gunicorn
+      - /bin/systemctl restart apache2
+      - /bin/systemctl restart mysql

@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 export TF_IN_AUTOMATION=YES
 if [ ! -d "app/.virtualenv" ]; then
-    echo "You have not set up a virtual enviroment for testing the application"
-    echo "Step 1: CD into app folder and run 'python3 -m venv .virtualenv'"
-    echo "Step 2: Run 'source .virtualenv/bin/activate' to activate virtual enviroment"
-    echo "Step 3: Run 'pip install -r requirements.txt'"
-    exit
+    echo "Setting up virtual enviroment for testing the application before deployment..."
+    cd app && python3 -m venv .virtualenv
+    .virtualenv/bin/pip3 install -r requirements.txt
+    cd .. || exit
 fi
 cd app && .virtualenv/bin/pytest
 if [ $? -ne 0 ]; then
@@ -16,8 +15,9 @@ echo "Tests passed, deploying..."
 cd ../provisioner || exit
 terraform apply --auto-approve || exit
 echo "Provisioning done, creating ansible inventory."
-LB=$(terraform output -raw loadbalancer)
-DB=$(terraform output -raw database)
+LOADBALANCER=$(terraform output -raw loadbalancer)
+DATABASE=$(terraform output -raw database)
+DOCTOR=$(terraform output -raw doctor)
 BACKENDS=$(terraform output -json backends | jq -r .[])
 cd .. || exit
 cat <<EOF >hosts
@@ -27,15 +27,25 @@ cat <<EOF >hosts
 
 [database]
 
+[doctor]
+
+[patients:children]
+loadbalancer
+backend
+database
+
 [stack:children]
 loadbalancer
 backend
 database
+doctor
 EOF
-echo "Added loadbalancer ${LB}"
-sed -i "/\[loadbalancer\]/a ${LB}" hosts
-echo "Added database ${DB}"
-sed -i "/\[database\]/a ${LB}" hosts
+echo "Added loadbalancer ${LOADBALANCER}"
+sed -i "/\[loadbalancer\]/a ${LOADBALANCER}" hosts
+echo "Added database ${DATABASE}"
+sed -i "/\[database\]/a ${DATABASE}" hosts
+echo "Added doctor ${DOCTOR}"
+sed -i "/\[doctor\]/a ${DOCTOR}" hosts
 for backend in $BACKENDS; do
     echo "Added backend ${backend}"
     sed -i "/\[backend\]/a ${backend}" hosts
