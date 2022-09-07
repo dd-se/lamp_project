@@ -1,0 +1,48 @@
+- name: install mysql-client
+  ansible.builtin.apt:
+    name: mysql-client
+    state: present
+- ansible.builtin.file:
+    path: "{{ scripts_path }}"
+    state: directory
+- name: render and copy heartbeat script to destination
+  ansible.builtin.template:
+    src: heartbeat.j2
+    dest: "{{ scripts_path }}heartbeat.sh"
+    owner: root
+    group: root
+    mode: 0755
+- ansible.builtin.file:
+    path: "{{ log_path }}heartbeat.log"
+    state: touch
+    owner: "{{ aws_remote_user }}"
+    group: "{{ aws_remote_user }}"
+    mode: 0644
+- name: create a cronjob that runs every minute
+  ansible.builtin.cron:
+    name: heartbeat
+    minute: "*"
+    hour: "*"
+    day: "*"
+    weekday: "*"
+    month: "*"
+    user: "{{ aws_remote_user }}"
+    job: "{{ scripts_path }}heartbeat.sh"
+    cron_file: heartbeat
+    state: present
+- name: create ssh key for heartbeat service
+  ansible.builtin.command:
+    chdir: /home/{{ aws_remote_user }}/.ssh/
+    cmd: ssh-keygen -q -b 2048 -t rsa -N '' -f heartbeat_key
+    creates: heartbeat_key*
+  become_user: "{{ aws_remote_user }}"
+- name: fetch public key
+  ansible.builtin.fetch:
+    src: /home/{{ aws_remote_user }}/.ssh/heartbeat_key.pub
+    dest: /tmp/pub_key/
+    flat: yes
+  ignore_errors: yes
+- name: restart cron
+  ansible.builtin.service:
+    name: cron
+    state: restarted

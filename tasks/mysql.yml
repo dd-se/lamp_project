@@ -5,18 +5,27 @@
       - python3-pymysql
     state: present
     update_cache: yes
+    cache_valid_time: 3600
 - name: 'ensure mysql is started'
   ansible.builtin.service:
     name: mysql
     state: started
     enabled: yes
-- name: create user
+- name: create user for backends
   community.mysql.mysql_user:
     login_unix_socket: /var/run/mysqld/mysqld.sock
     host: '%'
     name: "{{ secrets.username }}"
     password: "{{ secrets.password }}"
     priv: '{{ secrets.db }}.*:ALL,GRANT'
+    state: present
+- name: create user for doctor
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    host: '%'
+    name: "{{ secrets.doctor_username }}"
+    password: "{{ secrets.doctor_password }}"
+    priv: "{{ secrets.db }}.doctor:ALL"
     state: present
 - name: create database
   community.mysql.mysql_db:

@@ -3,6 +3,8 @@
     name: "{{ app.owner }}"
     comment: "app user"
     state: present
+    shell: /usr/bin/false
+    create_home: no
 - name: 'install python3 and pip'
   ansible.builtin.apt:
     name:
@@ -10,6 +12,7 @@
       - python3-pip
     state: present
     update_cache: yes
+    cache_valid_time: 3600
 - name: 'copy app files to backends'
   ansible.posix.synchronize:
     dest: "{{ app.dest }}"
@@ -51,3 +54,4 @@
     regexp: 'NODE'
     replace: "{{ ansible_hostname | upper }}"
   tags: base
+  

@@ -6,9 +6,9 @@
     {% for host in groups['backend'] %}
        BalancerMember http://{{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }}:{{ app.app_port }}
     {% endfor %}
-      </Proxy>
-      ProxyPreserveHost On
-      ProxyPass /server-status !
-      ProxyPass / balancer://mycluster/
-      ProxyPassReverse / balancer://mycluster/
+    </Proxy>
+    ProxyPreserveHost On
+    ProxyPass /server-status !
+    ProxyPass / balancer://mycluster/
+    ProxyPassReverse / balancer://mycluster/
 </VirtualHost>

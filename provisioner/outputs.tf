@@ -4,6 +4,9 @@ output "loadbalancer" {
 output "database" {
   value = aws_instance.database.public_ip
 }
+output "doctor" {
+  value = aws_instance.doctor.public_ip
+}
 output "backends" {
   value = aws_instance.backends[*].public_ip
 }
