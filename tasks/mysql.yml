@@ -41,7 +41,7 @@
     query: "{{ secret_query }}"
     single_transaction: yes
   ignore_errors: yes
-  no_log: true
+  no_log: yes
 - name: 'Bind mysql to {{ mysql.bind_address }}'
   ansible.builtin.lineinfile:
     path: /etc/mysql/mysql.conf.d/mysqld.cnf

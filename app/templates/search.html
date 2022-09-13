@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block content %}
+  <table class="table border table-striped my-2 shadow-sm mt-3">
+    <thead class="table border-2">
+      <tr>
+        <th scope="col">Title</th>
+        <th scope="col">Genre</th>
+        <th scope="col">Year</th>
+        <th scope="col">Trailer</th>
+        <th scope="col">Edit</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for movie in result %}
+        <tr>
+          <td>{{ movie.title }}</td>
+          <td>{{ movie.genre }}</td>
+          <td>{{ movie.year }}</td>
+          {% if movie.trailer %}
+            <td>
+              <a class="btn btn-primary"
+                 data-bs-toggle="modal"
+                 href="#trailer{{ loop.index }}"
+                 role="button">Watch
+              trailer</a>
+            </td>
+          {% else %}
+            <td>
+              <button class="btn btn-primary" type="button" disabled>Watch trailer</button>
+            </td>
+          {% endif %}
+          <td>
+            <a class="btn btn-primary"
+               data-bs-toggle="modal"
+               href="#edit_movie{{ loop.index }}"
+               role="button">Edit</a>
+          </td>
+        </tr>
+        <div class="modal fade"
+             id="trailer{{ loop.index }}"
+             aria-hidden="true"
+             aria-labelledby="{{ loop.index }}ToggleLabel"
+             tabindex="-1">
+          <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content rounded-4 shadow">
+              <div class="modal-body" style="display: block;">
+                <p align="center">
+                  <iframe width="450"
+                          height="300"
+                          src="https://www.youtube.com/embed/{{ movie.trailer }}"
+                          title="YouTube video player"
+                          frameborder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowfullscreen></iframe>
+                </p>
+                <div class="modal-footer">
+                  <button type="button"
+                          class="btn btn-secondary btn-sm"
+                          data-bs-dismiss="modal"
+                          aria-label="Close">Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal fade"
+             id="edit_movie{{ loop.index }}"
+             aria-hidden="true"
+             aria-labelledby="{{ loop.index }}ToggleLabel"
+             tabindex="-1">
+          <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content rounded-4 shadow">
+              <div class="modal-body" style="display: block;">
+                <form action="/edit-movie/{{ movie.id }}" method="post">
+                  <div class="form-floating mb-3">
+                    <input type="hidden" name="search_term" value="{{ search_term }}">
+                    <input type="text"
+                           class="form-control"
+                           name="title"
+                           id="title"
+                           placeholder="Input title"
+                           value="{{ movie.title }}">
+                    <label for="floatingLabel">Title (Min 3 characters)</label>
+                  </div>
+                  <div class="form-floating mb-3">
+                    <input type="text"
+                           class="form-control"
+                           name="genre"
+                           id="genre"
+                           placeholder="Input genre"
+                           value="{{ movie.genre }}">
+                    <label for="floatingLabel">Genre (Min 3 characters)</label>
+                  </div>
+                  <div class="form-floating mb-3">
+                    <input type="text"
+                           class="form-control"
+                           name="year"
+                           id="genre"
+                           placeholder="Year"
+                           value="{{ movie.year }}">
+                    <label for="floatingLabel">Year</label>
+                  </div>
+                  <div class="form-floating mb-3">
+                    <input type="text"
+                           class="form-control"
+                           name="trailer"
+                           id="genre"
+                           placeholder="Input Youtube ID"
+                           value="{{ movie.trailer }}">
+                    <label for="floatingLabel">Youtube ID (11 characters)</label>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                    <button type="button"
+                            class="btn btn-secondary float-end"
+                            data-bs-dismiss="modal"
+                            aria-label="Close">Close</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endblock content %}

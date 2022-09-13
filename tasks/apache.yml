@@ -2,16 +2,11 @@
   ansible.builtin.apt:
     name:
       - apache2
+      - certbot
+      - python3-certbot-apache
     state: present
     update_cache: yes
     cache_valid_time: 3600
-- name: render and copy vhost config file for apache webserver
-  ansible.builtin.template:
-    src: apache_vhost.j2
-    dest: /etc/apache2/sites-enabled/000-default.conf
-    owner: root
-    group: root
-    mode: 0644
 - name: enable plugins for apache webserver
   ansible.builtin.command:
     cmd: | 
@@ -28,8 +23,30 @@
     path: /etc/apache2/mods-enabled/status.conf
     regexp: '#Require ip 192.0.2.0/24'
     replace: 'Require ip {{ ip_number.stdout }}/32'
+- name: update DNS
+  ansible.builtin.shell:
+    cmd: |
+     echo url="https://www.duckdns.org/update?domains={{ domain }}&token={{ dns.token }}
+     &ip=" | curl -k -K - && echo ""
+- name: render and copy vhost config file for apache webserver
+  ansible.builtin.template:
+    src: apache_vhost.j2
+    dest: /etc/apache2/sites-enabled/000-default.conf
+    owner: root
+    group: root
+    mode: 0644
+- name: enable HTTPS
+  ansible.builtin.command:
+    cmd: certbot --apache -n --domains {{ fqdn }} --agree-tos --email {{ email }}
+  ignore_errors: yes
+- name: render and copy vhost ssl config file for apache webserver
+  ansible.builtin.template:
+    src: apache_vhost_ssl.j2
+    dest: /etc/apache2/sites-enabled/000-default-le-ssl.conf
+    owner: root
+    group: root
+    mode: 0644
 - name: restart service
   ansible.builtin.service:
     name: apache2
     state: restarted
-    

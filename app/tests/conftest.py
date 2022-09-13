@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 sys.path.append(Path(".").parent.as_posix())
 from api import router
-from database import Base, User, get_db
+from database import Base, User, get_db, Movie
 
 _app = FastAPI()
 _app.include_router(router)
@@ -65,3 +65,24 @@ def test_users(app: FastAPI, db_session: Session) -> Generator[List[User], Any, 
     db_session.add_all([first_user, second_user])
     db_session.commit()
     yield first_user, second_user
+
+
+@pytest.fixture(scope="module")
+def test_movie(app: FastAPI, db_session: Session) -> Generator[User, Any, None]:
+    user = User(
+        username="movieuser",
+        firstname="firstname",
+        lastname="lastname",
+        password="pass",
+        movies=[
+            Movie(
+                owner_id=3,
+                title="somemovie",
+                genre="somegenre",
+                trailer="http://some.url",
+            )
+        ],
+    )
+    db_session.add(user)
+    db_session.commit()
+    yield user

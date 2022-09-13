@@ -23,6 +23,11 @@
           <div class="card-body text-cap">
             <h5 class="card-title">Firstname: {{ user.firstname }}</h5>
             <p class="card-text">Lastname: {{ user.lastname }}</p>
+            <a class="btn btn-primary" href="/movies/{{ user.id }}" role="button">Likes</a>
+            <a class="btn btn-primary float-end"
+               data-bs-toggle="modal"
+               href="#add_movie{{ loop.index }}"
+               role="button">Add Movie</a>
           </div>
         </div>
         {% if loop.index %4 %}
@@ -33,6 +38,59 @@
     <br>
     <div class="row">
     {% endif %}
+    <div class="modal fade"
+         id="add_movie{{ loop.index }}"
+         aria-hidden="true"
+         aria-labelledby="{{ loop.index }}ToggleLabel"
+         tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content rounded-4 shadow">
+          <div class="modal-body" style="display: block;">
+            <form action="/add-movie/{{ user.id }}" method="post">
+              <div class="form-floating mb-3">
+                <input type="text"
+                       class="form-control"
+                       name="title"
+                       id="title"
+                       placeholder="Input title">
+                <label for="floatingLabel">Title (Min 3 characters)</label>
+              </div>
+              <div class="form-floating mb-3">
+                <input type="text"
+                       class="form-control"
+                       name="genre"
+                       id="genre"
+                       placeholder="Input genre">
+                <label for="floatingLabel">Genre (Min 3 characters)</label>
+              </div>
+              <div class="form-floating mb-3">
+                <input type="text"
+                       class="form-control"
+                       name="year"
+                       id="genre"
+                       placeholder="Year">
+                <label for="floatingLabel">Year</label>
+              </div>
+              <div class="form-floating mb-3">
+                <input type="text"
+                       class="form-control"
+                       name="trailer"
+                       id="genre"
+                       placeholder="Input Youtube ID">
+                <label for="floatingLabel">Youtube ID (11 characters)</label>
+              </div>
+              <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Submit</button>
+                <button type="button"
+                        class="btn btn-secondary float-end"
+                        data-bs-dismiss="modal"
+                        aria-label="Close">Close</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
   {% endfor %}
 </div>
 {% endblock content %}

@@ -1,0 +1,13 @@
+BACKUP_DATE=$(date +%Y%m%d)
+LOG_FILE={{ log_path }}db_backup.log
+mysqldump -u {{ secrets.backup_username }} -p"{{ secrets.backup_password }}" --all-databases | ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/db_backup_key dbbackup@{{ hostvars[groups['doctor'][0]]['ansible_facts']['default_ipv4']['address'] }} "cat > /opt/backup/db_backup-${BACKUP_DATE}.sql"
+if [ $? -eq 0 ]; then
+    echo "Database backed up on $(date)" >> $LOG_FILE
+else
+    echo "Database backup failed on $(date)" >> $LOG_FILE
+    curl --request POST \
+    --url https://api.sendgrid.com/v3/mail/send \
+    --header "Authorization: Bearer {{ gcmail.api_key }}" \
+    --header 'Content-Type: application/json' \
+    --data '{"personalizations": [{"to": [{"email": "{{ gcmail.email }}"}]}],"from": {"email": "{{ gcmail.email }}"},"subject": "500 - Urgent","content": [{"type": "text/plain", "value": "Intervention Required. Database backup failed"}]}'
+fi

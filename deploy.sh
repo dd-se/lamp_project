@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
-export TF_IN_AUTOMATION=YES
+if [[ "${1}" == "insert" ]]; then
+    ansible-playbook -e @secrets.yml --ask-vault-pass insert_movies.yml
+    exit
+fi
 if [ ! -d "app/.virtualenv" ]; then
     echo "Setting up virtual enviroment for testing the application before deployment..."
     cd app && python3 -m venv .virtualenv
     .virtualenv/bin/pip3 install -r requirements.txt
-    cd .. || exit
+    cd ..
 fi
 cd app && .virtualenv/bin/pytest
 if [ $? -ne 0 ]; then
@@ -13,7 +16,7 @@ if [ $? -ne 0 ]; then
 fi
 echo "Tests passed, deploying..."
 cd ../provisioner || exit
-terraform apply --auto-approve || exit
+terraform apply -input=false -auto-approve >/dev/null || exit
 echo "Provisioning done, creating ansible inventory."
 LOADBALANCER=$(terraform output -raw loadbalancer)
 DATABASE=$(terraform output -raw database)
@@ -50,4 +53,9 @@ for backend in $BACKENDS; do
     echo "Added backend ${backend}"
     sed -i "/\[backend\]/a ${backend}" hosts
 done
-ansible-playbook -e @secrets.yml --ask-vault-pass playbook.yml
+if [ -n "${1}" ]; then
+    ansible-playbook -e @secrets.yml --tags "${1}" --ask-vault-pass playbook.yml || exit
+else
+    ansible-playbook -e @secrets.yml --ask-vault-pass playbook.yml || exit
+fi
+echo "Visit https://group-soup.duckdns.org"

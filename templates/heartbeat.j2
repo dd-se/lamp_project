@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 SEND_MAIL=0
+LOG_FILE={{ log_path }}heartbeat.log
 {% for host in groups['backend'] %}
 status_code=$(curl -s -o /dev/null -w "%{http_code}" http://{{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }}:{{ app.app_port }})
 if [ $status_code -ne 200 ]; then
     SEND_MAIL=1
     ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/heartbeat_key doctor@{{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} sudo /bin/systemctl restart gunicorn
     if [ $? -eq 0 ]; then
-        echo "Restarted unresponsive backend {{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} $(date)" >> {{ log_path }}heartbeat.log
+        echo "Restarted unresponsive backend {{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} $(date)" >> $LOG_FILE
     else
-        echo "Failed to restart unresponsive backend {{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} $(date)" >> {{ log_path }}heartbeat.log
+        echo "Failed to restart unresponsive backend {{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} $(date)" >> $LOG_FILE
     fi
 fi
 {% endfor %}
@@ -18,9 +19,9 @@ if [ $status_code -ne 200 ]; then
     SEND_MAIL=1
     ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/heartbeat_key doctor@{{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} sudo /bin/systemctl restart apache2
     if [ $? -eq 0 ]; then
-        echo "Restarted unresponsive loadbalancer {{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} $(date)" >> {{ log_path }}heartbeat.log
+        echo "Restarted unresponsive loadbalancer {{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} $(date)" >> $LOG_FILE
     else
-        echo "Failed to restart unresponsive loadbalancer {{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} $(date)" >> {{ log_path }}heartbeat.log
+        echo "Failed to restart unresponsive loadbalancer {{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} $(date)" >> $LOG_FILE
     fi
 fi
 {% endfor %}
@@ -30,18 +31,18 @@ if [ -z $status ]; then
     SEND_MAIL=1
     ssh -o StrictHostKeyChecking=no -i $HOME/.ssh/heartbeat_key doctor@{{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} sudo /bin/systemctl restart mysql
     if [ $? -eq 0 ]; then
-        echo "Restarted unresponsive database {{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} $(date)" >> {{ log_path }}heartbeat.log
+        echo "Restarted unresponsive database {{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} $(date)" >> $LOG_FILE
     else
-        echo "Failed to restart unresponsive database {{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} $(date)" >> {{ log_path }}heartbeat.log
+        echo "Failed to restart unresponsive database {{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }} $(date)" >> $LOG_FILE
     fi
 fi
 {% endfor %}
 if [ $SEND_MAIL -eq 1 ]; then
-    echo "Email sent $(date)" >> {{ log_path }}heartbeat.log
+    echo "Email sent $(date)" >> $LOG_FILE
     curl --request POST \
     --url https://api.sendgrid.com/v3/mail/send \
     --header "Authorization: Bearer {{ gcmail.api_key }}" \
     --header 'Content-Type: application/json' \
     --data '{"personalizations": [{"to": [{"email": "{{ gcmail.email }}"}]}],"from": {"email": "{{ gcmail.email }}"},"subject": "500 - Urgent","content": [{"type": "text/plain", "value": "Intervention Required."}]}'
 fi
-echo "Heartbeat script executed at $(date)" >> {{ log_path }}heartbeat.log
+echo "Heartbeat script executed at $(date)" >> $LOG_FILE
