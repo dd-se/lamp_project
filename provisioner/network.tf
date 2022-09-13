@@ -18,7 +18,7 @@ resource "aws_subnet" "server_subnet" {
   }
 }
 
-# create a gateway and map it to my vpc
+# create a gateway and map it to created vpc
 resource "aws_internet_gateway" "server_gateway" {
   vpc_id = aws_vpc.server_vpc.id
 
@@ -39,7 +39,7 @@ resource "aws_route_table" "server_route" {
 
 # create a default route, if destionation not in subnet send it through the gateway
 resource "aws_route" "default_route" {
-  route_table_id         = aws_route_table.server_route.id        # apply this to my table
+  route_table_id         = aws_route_table.server_route.id        # apply this to the table
   destination_cidr_block = "0.0.0.0/0"                            # 0.0.0.0 0.0.0.0 via gateway
   gateway_id             = aws_internet_gateway.server_gateway.id # mapping to gw
 }
@@ -63,7 +63,7 @@ resource "aws_security_group" "allow_default" {
       from_port   = ingress.value.port
       to_port     = ingress.value.port
       protocol    = ingress.value.protocol
-      cidr_blocks = contains([80, 22], ingress.value.port) ? ["0.0.0.0/0"] : ["10.123.0.0/16"]
+      cidr_blocks = contains(var.public_ports, ingress.value.port) ? ["0.0.0.0/0"] : [aws_subnet.server_subnet.cidr_block]
       description = ingress.key
 
     }

@@ -1,0 +1,52 @@
+- name: create user for db backups
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    host: '%'
+    name: "{{ secrets.backup_username }}"
+    password: "{{ secrets.backup_password}}"
+    priv: '*.*:ALL,GRANT'
+    state: present
+- name: create ssh key for db backup service
+  ansible.builtin.command:
+    chdir: /home/{{ aws_remote_user }}/.ssh/
+    cmd: ssh-keygen -q -b 2048 -t rsa -N '' -f db_backup_key
+    creates: db_backup_key*
+  become_user: "{{ aws_remote_user }}"
+- name: fetch public key
+  ansible.builtin.fetch:
+    src: /home/{{ aws_remote_user }}/.ssh/db_backup_key.pub
+    dest: /tmp/pub_key/
+    flat: yes
+  ignore_errors: yes
+- ansible.builtin.file:
+    path: "{{ scripts_path }}"
+    state: directory
+- name: render and copy db_backup script to destination
+  ansible.builtin.template:
+    src: db_backup.j2
+    dest: "{{ scripts_path }}db_backup.sh"
+    owner: root
+    group: root
+    mode: 0755
+- name: create a cronjob that runs every 2 days
+  ansible.builtin.cron:
+    name: db_backup
+    minute: "0"
+    hour: "0"
+    day: "*/2"
+    weekday: "*"
+    month: "*"
+    user: "{{ aws_remote_user }}"
+    job: "{{ scripts_path }}db_backup.sh"
+    cron_file: db_backup
+    state: present
+- name: create db backup log
+  ansible.builtin.file:
+    path: "{{ log_path }}db_backup.log"
+    state: touch
+    owner: "{{ aws_remote_user }}"
+    group: "{{ aws_remote_user }}"
+    mode: 0644
+- name: restart cron
+  ansible.builtin.service:
+    name: cron

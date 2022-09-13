@@ -12,6 +12,8 @@
   community.general.system.sudoers:
     name: critical_services
     user: doctor
+    validation: detect
+    state: present
     commands: 
       - /bin/systemctl restart gunicorn
       - /bin/systemctl restart apache2

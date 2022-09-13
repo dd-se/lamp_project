@@ -1,14 +1,17 @@
 <VirtualHost *:80>
-	ServerAdmin groupchorba@nackademin.se
+	ServerAdmin groupsoup@nackademin.se
 	ErrorLog ${APACHE_LOG_DIR}/gunicorn-error.log
     CustomLog ${APACHE_LOG_DIR}/gunicorn-access.log combined
 	<Proxy balancer://mycluster>
     {% for host in groups['backend'] %}
-       BalancerMember http://{{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }}:{{ app.app_port }}
+        BalancerMember http://{{ hostvars[host]['ansible_facts']['default_ipv4']['address'] }}:{{ app.app_port }}
     {% endfor %}
     </Proxy>
     ProxyPreserveHost On
     ProxyPass /server-status !
     ProxyPass / balancer://mycluster/
     ProxyPassReverse / balancer://mycluster/
+RewriteEngine on
+RewriteCond %{SERVER_NAME} ={{ fqdn }}
+RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [END,NE,R=permanent]
 </VirtualHost>

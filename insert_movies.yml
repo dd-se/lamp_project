@@ -1,0 +1,15 @@
+- name: Run several queries against the db
+  hosts: database
+  become: yes
+  gather_facts: no
+  tasks:
+    - ansible.builtin.include_vars:
+        file: ./tasks/movies.yml
+    - community.mysql.mysql_query:
+        login_user: "{{ secrets.username }}"
+        login_password: "{{ secrets.password }}"
+        login_db: "{{ secrets.db }}"
+        query: "{{ movies }}"
+        single_transaction: yes
+      ignore_errors: no
+      no_log: no

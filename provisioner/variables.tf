@@ -10,6 +10,10 @@ variable "ingress_ports" {
   type        = map(any)
   description = "Specify allow rules"
 }
+variable "public_ports" {
+  type        = list(number)
+  description = "Specify public ports"
+}
 variable "backend_host_count" {
   type        = number
   description = "Specify backend host count"

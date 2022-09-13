@@ -17,10 +17,12 @@
   ansible.posix.synchronize:
     dest: "{{ app.dest }}"
     src: "{{ app.src }}"
+  tags: be
 - name: 'render and copy app enviroment variables to backend destinations'
   ansible.builtin.template:
     src: app_env.j2
     dest: "{{ app.dest }}.env"
+  tags: be
 - name: 'install virtualenv'
   ansible.builtin.pip:
     name: virtualenv
@@ -34,8 +36,9 @@
     dest: "{{ app.dest }}" 
     owner: "{{ app.owner }}"
     group: "{{ app.owner }}"
-    mode: 0744
+    mode: 0740
     recurse: yes
+  tags: be
 - name: 'render and copy systemd service file for backends'
   ansible.builtin.template:
     src: systemd_gunicorn_app.j2
@@ -48,10 +51,11 @@
     name: gunicorn
     state: restarted
     enabled: yes
+  tags: be
 - name: modify base.html
   ansible.builtin.replace:
     path: "{{ app.dest }}templates/base.html"
     regexp: 'NODE'
     replace: "{{ ansible_hostname | upper }}"
-  tags: base
+  tags: be
   

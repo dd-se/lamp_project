@@ -1,16 +1,18 @@
 from typing import Any, Union
 
 from fastapi import FastAPI, Request, responses
+from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
+from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
 
 from api import router
 from database import Base, engine
-from settings import secrets
 
 app = FastAPI(
     title="Gruppuppgift-Linux 2",
     version="DEMO",
-    description="A simple demonstration of a LAMF stack",
+    description="A simple demonstration of a LAMP stack",
 )
 
 
@@ -29,5 +31,18 @@ async def internal_server_error_handler(
         content={
             "Type": "Internal Server Error",
             "Action": "Staff has been notified, please try again later.",
-        }
+        },
+        status_code=500,
+    )
+
+
+@app.exception_handler(IntegrityError)
+@app.exception_handler(ValidationError)
+@app.exception_handler(RequestValidationError)
+async def rick_rolled(
+    request: Request,
+    exception: Union[IntegrityError, Union[ValidationError, RequestValidationError]],
+):
+    return responses.RedirectResponse(
+        "https://www.youtube.com/watch?v=dQw4w9WgXcQ", status_code=307
     )

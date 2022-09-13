@@ -1,0 +1,17 @@
+- name: create dbbackup user
+  ansible.builtin.user:
+    name: dbbackup
+    state: present
+    comment: "db backup services user"
+- name: insert dbbackup public key
+  ansible.posix.authorized_key:
+    user: dbbackup
+    state: present
+    key: "{{ lookup('file', '/tmp/pub_key/db_backup_key.pub') }}"
+- name: create backup directory
+  ansible.builtin.file:
+    path: "{{ backup_path }}"
+    state: directory
+    owner: dbbackup
+    group: dbbackup
+    mode: 0770

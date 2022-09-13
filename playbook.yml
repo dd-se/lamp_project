@@ -7,37 +7,57 @@
       src: ./app/
       dest: /opt/fastapi/
       owner: fastapi_user
-      description: simple fastapi app using a mysql database
+      description: simple fastapi app talking to a mysql database
       app_port: "8000"
     mysql:
       bind_address: '0.0.0.0'
     log_path: /var/log/
     scripts_path: /opt/scripts/
+    backup_path: /opt/backup/
+    domain: testssh-2
+    fqdn: testssh-2.duckdns.org
+    email: group.chorba@gmail.com
     aws_remote_user: ubuntu
   tasks:
       - name: '[LOADBALANCER] Install configure apache2'
         ansible.builtin.include_tasks:
           file: ./tasks/apache.yml
         when: "'loadbalancer' in group_names"
+        tags: lb
 
       - name: '[DATABASE] Install configure mysql database'
         ansible.builtin.include_tasks:
           file: ./tasks/mysql.yml
         when: "'database' in group_names"
+        tags: db
 
       - name: '[BACKEND] Install configure backends'
         ansible.builtin.include_tasks:
           file: ./tasks/app.yml
         when: "'backend' in group_names"
+        tags: be
       
       - name: '[DOCTOR] Configure heartbeat service'
         ansible.builtin.include_tasks:
           file: ./tasks/doctor.yml
         when: "'doctor' in group_names"
+        tags: dr
+
+      - name: '[DATABASE] Configure DB backup source'
+        ansible.builtin.include_tasks:
+          file: ./tasks/db_backup_source.yml
+        when: "'database' in group_names"
+        tags: db
+      
+      - name: '[DOCTOR] Configure DB backup destination'
+        ansible.builtin.include_tasks:
+          file: ./tasks/db_backup_destination.yml
+        when: "'doctor' in group_names"
 
 - name: Configure patients
   hosts: patients
   become: yes
+  gather_facts: no
   tasks:
     - name: '[PATIENTS] Configure patients'
       ansible.builtin.include_tasks:
@@ -46,10 +66,10 @@
 - name: local action
   hosts: localhost
   connection: local
+  gather_facts: no
   become: no
   tasks: 
       - name: Clean up
         ansible.builtin.file:
           path: /tmp/pub_key
           state: absent
-        
