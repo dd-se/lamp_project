@@ -8,6 +8,8 @@
 ### 6. Read the docs https://fastapi.tiangolo.com/tutorial/
 
 
-## To be continued
+DIAGRAM
+
+![Alt text](https://i.imgur.com/TEmIcCI.png "Optional title")
 
 
