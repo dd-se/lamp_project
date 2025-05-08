@@ -1,15 +1,45 @@
+# How to Set Up a Development Environment
 
-## HOW TO SETUP A DEV ENVIRONMENT
-### 1. Run 'sudo ansible-playbook setup_dev_env.yml' (ansible, docker and docker-compose required  https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-and-upgrading-ansible - https://docs.docker.com/compose/install/)
-### 2. 'cd' into app folder and run 'python3 -m venv .virtualenv'
-### 3. Run 'source .virtualenv/bin/activate' to activate virtual enviroment"
-### 4. Run 'pip install -r requirements.txt'"
-### 5. With the environment activated, press F5 to run in the app in debug mode, else run 'uvicorn main:app --reload --port 12345'.
-### 6. Read the docs https://fastapi.tiangolo.com/tutorial/
+Follow these steps to set up your development environment:
 
+1. **Run the Ansible Playbook**
+   - Ensure you have [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-and-upgrading-ansible), [Docker](https://docs.docker.com/get-docker/), and [Docker Compose](https://docs.docker.com/compose/install/) installed.
+   - Execute the following command:
+     ```bash
+     sudo ansible-playbook setup_dev_env.yml
+     ```
 
-DIAGRAM
+2. **Set Up a Python Virtual Environment**
+   - Navigate to the `app` folder:
+     ```bash
+     cd app
+     ```
+   - Create a virtual environment:
+     ```bash
+     python3 -m venv .virtualenv
+     ```
 
-![Alt text](https://i.imgur.com/TEmIcCI.png "Optional title")
+3. **Activate the Virtual Environment**
+   - Run the following command:
+     ```bash
+     source .virtualenv/bin/activate
+     ```
 
+4. **Install Dependencies**
+   - With the virtual environment activated, install the required dependencies:
+     ```bash
+     pip install -r requirements.txt
+     ```
 
+5. **Run the Application**
+   - To run the application using Uvicorn:
+     ```bash
+     uvicorn main:app --reload --port 12345
+     ```
+
+6. **Read the Documentation**
+   - Familiarize yourself with the [FastAPI documentation](https://fastapi.tiangolo.com/tutorial/).
+---
+**Diagram**
+
+![Alt text](https://i.imgur.com/TEmIcCI.png "Diagram")
